@@ -121,73 +121,73 @@ docker compose -f full_compose.yaml up
 ## Modelagem do banco
 ```mermaid
 erDiagram
-DUCK {
-    BIGSERIAL id PK
-    VARCHAR(255) name "NOT NULL"
-    BIGINT mother_id "FK -> DUCK.id, NULL, ON DELETE SET NULL"
-    TIMESTAMPTZ created_at "NOT NULL DEFAULT now()"
-    TIMESTAMPTZ updated_at "NOT NULL DEFAULT now()"
-    -- CHECK: mother_id IS NULL OR mother_id <> id
-    -- INDEX: idx_duck_mother (mother_id)
-}
+    DUCK {
+        bigint id PK
+        varchar name
+        bigint mother_id
+        timestamptz created_at
+        timestamptz updated_at
+    }
 
-CUSTOMER {
-    BIGSERIAL id PK
-    VARCHAR(255) name "NOT NULL"
-    BOOLEAN has_sales_discount "NOT NULL DEFAULT FALSE"
-    TIMESTAMPTZ created_at "NOT NULL DEFAULT now()"
-    TIMESTAMPTZ updated_at "NOT NULL DEFAULT now()"
-}
+    CUSTOMER {
+        bigint id PK
+        varchar name
+        boolean has_sales_discount
+        timestamptz created_at
+        timestamptz updated_at
+    }
 
-EMPLOYEE {
-BIGSERIAL id PK
-VARCHAR(255) name "NOT NULL"
-VARCHAR(64)  cpf "UNIQUE NOT NULL"
-VARCHAR(64)  employee_code "UNIQUE NOT NULL"
-TIMESTAMPTZ created_at "NOT NULL DEFAULT now()"
-TIMESTAMPTZ updated_at "NOT NULL DEFAULT now()"
-}
+    EMPLOYEE {
+        bigint id PK
+        varchar name
+        varchar cpf
+        varchar employee_code
+        timestamptz created_at
+        timestamptz updated_at
+    }
 
-SALE {
-BIGSERIAL id PK
-NUMERIC(12,2) total_before_discount "NOT NULL, CHECK >= 0"
-NUMERIC(12,2) total_after_discount  "NOT NULL, CHECK >= 0"
-BIGINT customer_id "FK -> CUSTOMER.id NOT NULL"
-BIGINT employee_id "FK -> EMPLOYEE.id NOT NULL"
-TIMESTAMPTZ sale_date  "NOT NULL DEFAULT now()"
-TIMESTAMPTZ created_at "NOT NULL DEFAULT now()"
-TIMESTAMPTZ updated_at "NOT NULL DEFAULT now()"
--- INDEX: (employee_id, sale_date)
--- INDEX: (customer_id, sale_date)
--- INDEX: (sale_date)
-}
+    SALE {
+        bigint id PK
+        numeric total_before_discount
+        numeric total_after_discount
+        bigint customer_id
+        bigint employee_id
+        timestamptz sale_date
+        timestamptz created_at
+        timestamptz updated_at
+    }
 
-SALE_ITEM {
-BIGSERIAL id PK
-NUMERIC(12,2) price_at_sale "NOT NULL, CHECK >= 0"
-BIGINT sale_id "FK -> SALE.id NOT NULL, ON DELETE CASCADE"
-BIGINT duck_id "FK -> DUCK.id NOT NULL, UNIQUE"
-}
+    SALE_ITEM {
+        bigint id PK
+        numeric price_at_sale
+        bigint sale_id
+        bigint duck_id
+    }
 
-V_SOLD_DUCK {
-BIGINT duck_id
-VARCHAR(255) duck_name
-NUMERIC(12,2) price_at_sale
-BIGINT sale_id
-TIMESTAMPTZ sale_date
-BIGINT customer_id
-VARCHAR(255) customer_name
-BIGINT employee_id
-VARCHAR(255) employee_name
--- VIEW: JOIN sale_item -> duck, sale, customer, employee
-}
+    V_SOLD_DUCK {
+        bigint duck_id
+        varchar duck_name
+        numeric price_at_sale
+        bigint sale_id
+        timestamptz sale_date
+        bigint customer_id
+        varchar customer_name
+        bigint employee_id
+        varchar employee_name
+    }
 
-%% Relationships
-DUCK o|--o{ DUCK : "mother (0..1) → children (0..*)"
-CUSTOMER ||--o{ SALE : "customer_id"
-EMPLOYEE ||--o{ SALE : "employee_id"
-SALE ||--|{ SALE_ITEM : "sale_id (1..*)"
-DUCK ||--o| SALE_ITEM : "duck_id (sold at most once)"
-SALE_ITEM ||--|| V_SOLD_DUCK : "1:1 row in view"
+%% Relationships (cardinalities)
+    DUCK o|--o{ DUCK : mother
+    CUSTOMER ||--o{ SALE : customer_id
+    EMPLOYEE ||--o{ SALE : employee_id
+    SALE ||--|{ SALE_ITEM : sale_id
+    DUCK o|--|| SALE_ITEM : duck_id
+
+%% View rows are derived from joins (not real FKs)
+    SALE    ||--o{ V_SOLD_DUCK : sale
+    DUCK    ||--o{ V_SOLD_DUCK : duck
+    CUSTOMER||--o{ V_SOLD_DUCK : customer
+    EMPLOYEE||--o{ V_SOLD_DUCK : employee
+
 
 ```
